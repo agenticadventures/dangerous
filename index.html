@@ -5,23 +5,520 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Agent Sandbox</title>
     <style>
+      :root {
+        --ink: #1a1a1a;
+        --line: #ddd;
+        --accent: #2b6cb0;
+      }
       body {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        max-width: 40rem;
-        margin: 4rem auto;
+        max-width: 60rem;
+        margin: 2rem auto;
         padding: 0 1.25rem;
         line-height: 1.6;
-        color: #1a1a1a;
+        color: var(--ink);
       }
       code { background: #f2f2f2; padding: 0.1em 0.35em; border-radius: 4px; }
+
+      /* Nav row */
+      nav.tabs {
+        display: flex;
+        gap: 0.25rem;
+        border-bottom: 2px solid var(--line);
+        margin-bottom: 1.5rem;
+      }
+      nav.tabs button {
+        font: inherit;
+        background: transparent;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        cursor: pointer;
+        color: #666;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+      }
+      nav.tabs button:hover { color: var(--ink); }
+      nav.tabs button.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        font-weight: bold;
+      }
+
+      .panel { display: none; }
+      .panel.active { display: block; }
+
+      /* World app */
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+      .toolbar .group {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .toolbar label { font-size: 0.85rem; color: #555; }
+      .toolbar button {
+        font: inherit;
+        font-size: 0.85rem;
+        background: #fafafa;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+        cursor: pointer;
+      }
+      .toolbar button.sel {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .toolbar button.primary {
+        background: #2f855a;
+        color: #fff;
+        border-color: #2f855a;
+      }
+      canvas {
+        border: 1px solid #999;
+        display: block;
+        cursor: crosshair;
+        touch-action: none;
+        max-width: 100%;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.9rem;
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+      }
+      .legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+      .legend i {
+        width: 0.9rem; height: 0.9rem;
+        border: 1px solid #0003;
+        display: inline-block;
+      }
+      #tooltip {
+        position: fixed;
+        pointer-events: none;
+        background: #1a1a1aee;
+        color: #fff;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+        border-radius: 4px;
+        white-space: nowrap;
+        display: none;
+        z-index: 10;
+      }
+      .hint { font-size: 0.8rem; color: #777; margin-top: 0.5rem; }
     </style>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    <p>
-      This placeholder confirms GitHub Pages is publishing agent sandbox from this repo.
-      The Claude Code agent can replace it — edit or overwrite
-      <code>index.html</code> and push to <code>main</code> to redeploy.
-    </p>
+    <nav class="tabs">
+      <button data-tab="home" class="active">Home</button>
+      <button data-tab="world">World</button>
+    </nav>
+
+    <!-- HOME: original index.html contents -->
+    <section id="home" class="panel active">
+      <h1>Hello World!</h1>
+      <p>
+        This placeholder confirms GitHub Pages is publishing agent sandbox from this repo.
+        The Claude Code agent can replace it — edit or overwrite
+        <code>index.html</code> and push to <code>main</code> to redeploy.
+      </p>
+    </section>
+
+    <!-- WORLD: interactive map painter + biome generator (per worldbuilding_plan.md) -->
+    <section id="world" class="panel">
+      <h1>World Builder</h1>
+      <p>Paint a world map and generate Earth-like climate biomes. Top of the map is 90°N, bottom is 90°S.</p>
+
+      <div class="toolbar">
+        <div class="group">
+          <button class="tool sel" data-tool="land">Land</button>
+          <button class="tool" data-tool="water">Water</button>
+          <button class="tool" data-tool="mountain">Mountain</button>
+          <button class="tool" data-tool="erase">Erase</button>
+        </div>
+        <div class="group">
+          <label>Brush</label>
+          <button class="brush" data-size="1">S</button>
+          <button class="brush sel" data-size="2">M</button>
+          <button class="brush" data-size="4">L</button>
+        </div>
+        <button class="primary" id="generate">Generate Biomes</button>
+        <button id="clear">Clear</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="group">
+          <label><input type="checkbox" id="ovLat" /> Latitude lines</label>
+          <label><input type="checkbox" id="ovWind" /> Wind arrows</label>
+          <label><input type="checkbox" id="ovMoist" /> Moisture overlay</label>
+        </div>
+      </div>
+
+      <canvas id="map" width="800" height="600"></canvas>
+
+      <div class="legend" id="legend"></div>
+      <p class="hint">Left-click and drag to paint. Hover after generating to inspect a cell. Mountains painted on ocean auto-fill nearby land.</p>
+    </section>
+
+    <div id="tooltip"></div>
+
+    <script>
+      /* ---------- Tab switching ---------- */
+      document.querySelectorAll("nav.tabs button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("nav.tabs button").forEach((b) => b.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById(btn.dataset.tab).classList.add("active");
+        });
+      });
+
+      /* ---------- World Builder ---------- */
+      const COLS = 80, ROWS = 60;
+      const canvas = document.getElementById("map");
+      const ctx = canvas.getContext("2d");
+      const CW = canvas.width / COLS, CH = canvas.height / ROWS;
+
+      // Terrain: 0 ocean, 1 land, 2 mountain
+      const OCEAN = 0, LAND = 1, MOUNTAIN = 2;
+      const terrain = new Array(COLS * ROWS).fill(OCEAN);
+      // Computed per cell after generation
+      let biome = null;     // string[]
+      let moisture = null;  // number[] 0-100
+      let generated = false;
+
+      let tool = "land";
+      let brush = 2;
+      let painting = false;
+
+      const idx = (c, r) => r * COLS + c;
+
+      /* ---- Climate model (per worldbuilding_plan.md) ---- */
+      // Map row -> latitude: top = 90N (+90), bottom = 90S (-90)
+      function latOf(r) {
+        const t = (r + 0.5) / ROWS;        // 0..1 top->bottom
+        return 90 - t * 180;               // +90 .. -90
+      }
+
+      // Temperature band from |lat|
+      function tempBand(absLat) {
+        if (absLat < 20) return "Hot";
+        if (absLat < 40) return "Warm";
+        if (absLat < 60) return "Cool";
+        if (absLat < 75) return "Cold";
+        return "Polar";
+      }
+
+      // Base moisture (0-100) from Hadley-cell latitude bands
+      function baseMoisture(absLat) {
+        if (absLat < 10) return 90;        // ITCZ — very wet
+        if (absLat < 30) return 15;        // subtropical high — very dry
+        if (absLat < 60) return 50;        // temperate — moderate
+        if (absLat < 75) return 75;        // subpolar low — wet
+        return 15;                         // polar high — very dry
+      }
+
+      // Prevailing wind horizontal step (dc) that air travels.
+      // Trade winds (0-30): air moves west  -> dc = -1
+      // Westerlies (30-60): air moves east  -> dc = +1
+      // Polar easterlies (60-90): air moves west -> dc = -1
+      function windDC(absLat) {
+        if (absLat < 30) return -1;
+        if (absLat < 60) return 1;
+        return -1;
+      }
+
+      // Moisture category from numeric moisture
+      function moistCat(m) {
+        if (m < 20) return "Very Dry";
+        if (m < 40) return "Dry";
+        if (m < 60) return "Moderate";
+        if (m < 80) return "Wet";
+        return "Very Wet";
+      }
+
+      // Biome lookup [tempBand][moistCat]
+      const BIOMES = {
+        Hot:   { "Very Dry": "Desert", "Dry": "Savanna", "Moderate": "Savanna", "Wet": "Tropical forest", "Very Wet": "Rainforest" },
+        Warm:  { "Very Dry": "Desert", "Dry": "Shrubland", "Moderate": "Grassland", "Wet": "Deciduous forest", "Very Wet": "Temperate rainforest" },
+        Cool:  { "Very Dry": "Cold desert", "Dry": "Steppe", "Moderate": "Boreal forest", "Wet": "Boreal forest", "Very Wet": "Temperate rainforest" },
+        Cold:  { "Very Dry": "Tundra", "Dry": "Tundra", "Moderate": "Taiga", "Wet": "Taiga", "Very Wet": "Taiga" },
+        Polar: { "Very Dry": "Ice cap", "Dry": "Ice cap", "Moderate": "Ice cap", "Wet": "Ice cap", "Very Wet": "Ice cap" },
+      };
+
+      const BIOME_COLORS = {
+        "Ocean": "#2c5f8a",
+        "Mountain": "#6b5b4f",
+        "Desert": "#e3d39a",
+        "Savanna": "#cdba6a",
+        "Tropical forest": "#2f9e44",
+        "Rainforest": "#1b6b2e",
+        "Shrubland": "#bcae6f",
+        "Grassland": "#a7c957",
+        "Deciduous forest": "#52a256",
+        "Temperate rainforest": "#2d8a5f",
+        "Cold desert": "#cbc2a3",
+        "Steppe": "#bcc784",
+        "Boreal forest": "#4a7a52",
+        "Taiga": "#5a7d6a",
+        "Tundra": "#b6c0b0",
+        "Ice cap": "#eef3f7",
+      };
+
+      /* ---- Biome generation ---- */
+      function generate() {
+        moisture = new Array(COLS * ROWS).fill(0);
+        biome = new Array(COLS * ROWS).fill(null);
+
+        // 1) Coastal distance (BFS from ocean over land+mountain)
+        const dist = new Array(COLS * ROWS).fill(Infinity);
+        const queue = [];
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (terrain[idx(c, r)] === OCEAN) { dist[idx(c, r)] = 0; queue.push([c, r]); }
+          }
+        }
+        let head = 0;
+        while (head < queue.length) {
+          const [c, r] = queue[head++];
+          const d = dist[idx(c, r)];
+          for (const [dc, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+            const nc = c + dc, nr = r + dr;
+            if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) continue;
+            const ni = idx(nc, nr);
+            if (terrain[ni] !== OCEAN && dist[ni] > d + 1) {
+              dist[ni] = d + 1;
+              queue.push([nc, nr]);
+            }
+          }
+        }
+
+        // 2) Per-cell moisture + biome
+        for (let r = 0; r < ROWS; r++) {
+          const lat = latOf(r);
+          const absLat = Math.abs(lat);
+          const tb = tempBand(absLat);
+          const dc = windDC(absLat);
+          for (let c = 0; c < COLS; c++) {
+            const i = idx(c, r);
+            if (terrain[i] === OCEAN) { biome[i] = "Ocean"; continue; }
+
+            let m = baseMoisture(absLat);
+
+            // Coastal moisture bonus, decaying inland (~6 cells)
+            const d = dist[i];
+            if (isFinite(d)) m += Math.max(0, 30 - d * 5);
+
+            // Rain shadow: scan upwind (-dc) for a mountain within ~10 cells.
+            // Leeward of a mountain gets drier; effect decays with distance.
+            for (let step = 1; step <= 10; step++) {
+              const uc = c - dc * step;     // upwind cell
+              if (uc < 0 || uc >= COLS) break;
+              if (terrain[idx(uc, r)] === MOUNTAIN) {
+                m -= Math.max(0, 45 - (step - 1) * 5);
+                break;
+              }
+            }
+
+            m = Math.max(0, Math.min(100, m));
+            moisture[i] = m;
+            biome[i] = (terrain[i] === MOUNTAIN) ? "Mountain" : BIOMES[tb][moistCat(m)];
+          }
+        }
+
+        generated = true;
+        draw();
+      }
+
+      /* ---- Rendering ---- */
+      function draw() {
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const i = idx(c, r);
+            let color;
+            if (generated) {
+              color = BIOME_COLORS[biome[i]] || "#000";
+            } else {
+              const t = terrain[i];
+              color = t === OCEAN ? BIOME_COLORS.Ocean : t === MOUNTAIN ? BIOME_COLORS.Mountain : "#9bd07a";
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(c * CW, r * CH, CW + 0.5, CH + 0.5);
+          }
+        }
+
+        // Mountains drawn on top of biomes after generation
+        if (generated) {
+          ctx.fillStyle = BIOME_COLORS.Mountain;
+          for (let r = 0; r < ROWS; r++)
+            for (let c = 0; c < COLS; c++)
+              if (terrain[idx(c, r)] === MOUNTAIN)
+                ctx.fillRect(c * CW, r * CH, CW + 0.5, CH + 0.5);
+        }
+
+        if (ovMoist.checked && generated) drawMoisture();
+        if (ovLat.checked) drawLatLines();
+        if (ovWind.checked) drawWind();
+      }
+
+      function drawMoisture() {
+        for (let r = 0; r < ROWS; r++)
+          for (let c = 0; c < COLS; c++) {
+            const i = idx(c, r);
+            if (terrain[i] === OCEAN) continue;
+            ctx.fillStyle = `rgba(30,120,220,${(moisture[i] / 100) * 0.6})`;
+            ctx.fillRect(c * CW, r * CH, CW + 0.5, CH + 0.5);
+          }
+      }
+
+      function drawLatLines() {
+        ctx.strokeStyle = "rgba(0,0,0,0.35)";
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.font = "10px monospace";
+        ctx.lineWidth = 1;
+        for (const lat of [60, 30, 0, -30, -60]) {
+          const y = ((90 - lat) / 180) * canvas.height;
+          ctx.beginPath();
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillText((lat === 0 ? "0° (Equator)" : Math.abs(lat) + "°" + (lat > 0 ? "N" : "S")), 4, y - 2);
+        }
+      }
+
+      function drawWind() {
+        ctx.strokeStyle = "rgba(255,255,255,0.85)";
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.lineWidth = 1.5;
+        const stepR = 6, stepC = 10;
+        for (let r = stepR / 2; r < ROWS; r += stepR) {
+          const dc = windDC(Math.abs(latOf(Math.floor(r))));
+          for (let c = stepC / 2; c < COLS; c += stepC) {
+            const x = c * CW, y = r * CH, len = CW * 4 * dc;
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+            // arrow head
+            ctx.beginPath();
+            ctx.moveTo(x + len, y);
+            ctx.lineTo(x + len - 4 * dc, y - 3);
+            ctx.lineTo(x + len - 4 * dc, y + 3);
+            ctx.closePath(); ctx.fill();
+          }
+        }
+      }
+
+      /* ---- Painting ---- */
+      function cellAt(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        return [Math.floor(x / CW), Math.floor(y / CH)];
+      }
+
+      function paint(c, r) {
+        for (let dr = -brush + 1; dr < brush; dr++) {
+          for (let dc = -brush + 1; dc < brush; dc++) {
+            const nc = c + dc, nr = r + dr;
+            if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) continue;
+            const i = idx(nc, nr);
+            if (tool === "land") terrain[i] = LAND;
+            else if (tool === "water" || tool === "erase") terrain[i] = OCEAN;
+            else if (tool === "mountain") {
+              // Mountain on ocean auto-fills a small radius of land first
+              if (terrain[i] === OCEAN) {
+                for (let er = -2; er <= 2; er++)
+                  for (let ec = -2; ec <= 2; ec++) {
+                    const fc = nc + ec, fr = nr + er;
+                    if (fc < 0 || fc >= COLS || fr < 0 || fr >= ROWS) continue;
+                    if (terrain[idx(fc, fr)] === OCEAN) terrain[idx(fc, fr)] = LAND;
+                  }
+              }
+              terrain[i] = MOUNTAIN;
+            }
+          }
+        }
+        generated = false; // terrain changed; biomes stale until regenerated
+        draw();
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        painting = true;
+        const [c, r] = cellAt(e);
+        paint(c, r);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (painting) { const [c, r] = cellAt(e); paint(c, r); }
+        showTooltip(e);
+      });
+      window.addEventListener("pointerup", () => (painting = false));
+      canvas.addEventListener("pointerleave", () => (tooltip.style.display = "none"));
+
+      /* ---- Tooltip ---- */
+      const tooltip = document.getElementById("tooltip");
+      function showTooltip(e) {
+        if (!generated) { tooltip.style.display = "none"; return; }
+        const [c, r] = cellAt(e);
+        if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+        const i = idx(c, r);
+        const lat = latOf(r);
+        const tb = tempBand(Math.abs(lat));
+        let txt;
+        if (terrain[i] === OCEAN) txt = `Ocean · ${Math.abs(lat).toFixed(0)}°${lat >= 0 ? "N" : "S"}`;
+        else txt = `${biome[i]} · ${tb} · ${moistCat(moisture[i])} (${moisture[i].toFixed(0)}) · ${Math.abs(lat).toFixed(0)}°${lat >= 0 ? "N" : "S"}`;
+        tooltip.textContent = txt;
+        tooltip.style.left = e.clientX + 12 + "px";
+        tooltip.style.top = e.clientY + 12 + "px";
+        tooltip.style.display = "block";
+      }
+
+      /* ---- Controls ---- */
+      document.querySelectorAll(".tool").forEach((b) =>
+        b.addEventListener("click", () => {
+          document.querySelectorAll(".tool").forEach((x) => x.classList.remove("sel"));
+          b.classList.add("sel");
+          tool = b.dataset.tool;
+        })
+      );
+      document.querySelectorAll(".brush").forEach((b) =>
+        b.addEventListener("click", () => {
+          document.querySelectorAll(".brush").forEach((x) => x.classList.remove("sel"));
+          b.classList.add("sel");
+          brush = +b.dataset.size;
+        })
+      );
+      const ovLat = document.getElementById("ovLat");
+      const ovWind = document.getElementById("ovWind");
+      const ovMoist = document.getElementById("ovMoist");
+      [ovLat, ovWind, ovMoist].forEach((cb) => cb.addEventListener("change", draw));
+      document.getElementById("generate").addEventListener("click", generate);
+      document.getElementById("clear").addEventListener("click", () => {
+        terrain.fill(OCEAN);
+        generated = false;
+        draw();
+      });
+
+      /* ---- Legend ---- */
+      function buildLegend() {
+        const el = document.getElementById("legend");
+        const order = ["Ocean","Mountain","Rainforest","Tropical forest","Savanna","Desert",
+          "Grassland","Shrubland","Deciduous forest","Temperate rainforest","Cold desert",
+          "Steppe","Boreal forest","Taiga","Tundra","Ice cap"];
+        el.innerHTML = order.map((b) =>
+          `<span><i style="background:${BIOME_COLORS[b]}"></i>${b}</span>`).join("");
+      }
+
+      buildLegend();
+      draw();
+    </script>
   </body>
 </html>
