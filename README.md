@@ -5,6 +5,17 @@ Codespace. The agent runs on a throwaway cloud VM (not your computer), can reach
 plus the internet, and draws on a budget-capped Anthropic key. Because permission prompts are
 turned fully off, the *environment* is the safety boundary — that's what the isolation is for.
 
+Codespaces is GitHub's cloud dev environment — a Linux VM (here a Node 20 container defined by devcontainer.json) running on GitHub's servers, driven through a browser tab. The code, the terminal, and the Claude process all execute on that remote VM, not on your laptop.
+
+Bypass mode removes the agent's permission prompts entirely, so the environment itself is the safety boundary, not the prompts. How this sandbox is isolated to contain a misbehaving agent:
+The agent runs on a throwaway cloud VM, so it never touches your computer — and the VM can be deleted and rebuilt at will. 
+It lives in a brand-new GitHub account with nothing in it but this one repo, so there are no other repos or orgs for it to reach. 
+Its GitHub token is repo-scoped, limiting write access to just dangerous. Its only credential is a workspace-scoped, $20-capped Anthropic key on a separate throwaway org, so runaway spend hits a hard ceiling. 
+And all of it sits behind a fresh Gmail identity unconnected to your real accounts.
+
+The one deliberate gap: outbound internet is open. The caps and scoping limit what the agent can reach into and spend, but not what it can send out. That's why pointing it at untrusted web content is the residual risk to stay mindful of.
+
+
 ## Launch the agent
 
 1. Click **Code → Codespaces → Create codespace**, and open it **in the browser**.
