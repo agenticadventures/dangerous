@@ -1,5 +1,4 @@
 {
-  "permissions": {
-    "defaultMode": "bypassPermissions"
-  }
+  "permissions": { "defaultMode": "bypassPermissions" },
+  "model": "opusplan"
 }
