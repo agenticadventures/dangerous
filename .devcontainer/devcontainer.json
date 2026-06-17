@@ -2,7 +2,7 @@
   "name": "claude-agent",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "remoteUser": "node",
-
+   "remoteEnv": { "PATH": "/usr/local/share/npm-global/bin:${containerEnv:PATH}" },
   // Persist Claude Code's user config (including the one-time bypass acceptance)
   // across Codespace rebuilds, so you don't re-accept the warning each time.
   "mounts": [
