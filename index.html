@@ -205,7 +205,6 @@
           <button class="tool sel" data-tool="land"><i class="sw" style="background:#79b35e"></i>Land</button>
           <button class="tool" data-tool="water"><i class="sw" style="background:#2f6690"></i>Water</button>
           <button class="tool" data-tool="mountain"><i class="sw" style="background:#7d6b5d"></i>Mountain</button>
-          <button class="tool" data-tool="erase">Erase</button>
         </div>
         <div class="group">
           <span class="glabel">Brush</span>
@@ -611,7 +610,7 @@
             if (nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS) continue;
             const i = idx(nc, nr);
             if (tool === "land") terrain[i] = LAND;
-            else if (tool === "water" || tool === "erase") terrain[i] = OCEAN;
+            else if (tool === "water") terrain[i] = OCEAN;
             else if (tool === "mountain") {
               // Mountain on ocean auto-fills a small radius of land first
               if (terrain[i] === OCEAN) {
