@@ -66,6 +66,10 @@ Map is a grid of cells mapped to latitudes (top = 90°N, bottom = 90°S). Blank 
 
 ## Stages
 
+> **Status:** Stages 1–4 complete. Map rendering polished with bathymetric ocean
+> shading, crisp coastlines, hillshaded mountains (snow caps in cold latitudes),
+> hi-DPI canvas, and a refined toolbar/legend. Next features tracked as GitHub issues.
+
 **Stage 1 — Painting + basic biomes**
 - Grid canvas with land/water/mountain painting
 - Latitude lines overlay (toggle)
