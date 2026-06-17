@@ -237,11 +237,17 @@
         padding: 0.12rem 0.5rem; border-radius: 999px;
         border: 1px solid transparent; white-space: nowrap;
       }
-      .pill.cat  { background: #eaf1f8; color: #2b6cb0; border-color: #d3e3f3; }
-      .pill.ui   { background: #e8f6ee; color: #2f855a; border-color: #cdebd9; }
-      .pill.code { background: #f1eef6; color: #6b4ea0; border-color: #e2dcef; }
+      .pill.cat   { background: #eaf1f8; color: #2b6cb0; border-color: #d3e3f3; }
+      .pill.ui    { background: #e8f6ee; color: #2f855a; border-color: #cdebd9; }
+      .pill.code  { background: #f1eef6; color: #6b4ea0; border-color: #e2dcef; }
+      .pill.model { background: #eef1f4; color: #44515e; border-color: #dde3e9; }
+      .pill.issue { background: #fff4e6; color: #b35309; border-color: #f3dcc0; }
+      a.pill { text-decoration: none; cursor: pointer; transition: filter 0.12s; }
+      a.pill:hover { filter: brightness(0.96); }
       .entry h3 { margin: 0.1rem 0 0.3rem; font-size: 1rem; letter-spacing: -0.01em; }
       .entry p  { margin: 0; color: #3a4756; font-size: 0.9rem; line-height: 1.55; }
+      .entry p a, .entry .refs a { color: var(--accent); text-decoration: none; }
+      .entry p a:hover, .entry .refs a:hover { text-decoration: underline; }
       .entry .refs { margin-top: 0.5rem; font-size: 0.74rem; color: var(--muted); }
       .entry .refs code { font-size: 0.72rem; }
     </style>
@@ -273,16 +279,24 @@
             <time>Jun 17, 2026 · 2:20 PM ET</time>
             <span class="pill cat">Feature · Planning</span>
             <span class="pill ui">👁 Visible in UI</span>
+            <span class="pill model">Claude Opus 4.8</span>
+            <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/1">#1</a>
+            <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/2">#2</a>
+            <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/3">#3</a>
           </div>
           <h3>Stage 4, a next-feature roadmap, and this journal</h3>
           <p>
-            Finished Stage 4 of the world-building plan — PNG export plus save/load to the
-            browser — and gave the painted map a visual overhaul: ocean-depth shading, crisp
-            coastlines, and hill-shaded mountains. Opened three GitHub issues for what's next
-            (rivers &amp; lakes, a random-world generator, and undo/redo with shareable links),
-            and created this work journal.
+            Finished Stage 4 of the
+            <a href="https://github.com/agenticadventures/dangerous/blob/main/_plans/worldbuilding_plan.md">world-building plan</a>
+            — PNG export plus save/load to the browser — and gave the painted map a visual
+            overhaul: ocean-depth shading, crisp coastlines, and hill-shaded mountains. Opened
+            three GitHub issues for what's next (rivers &amp; lakes, a random-world generator,
+            and undo/redo with shareable links), and created this work journal.
           </p>
-          <div class="refs">Commit <code>a9b260c</code> · Issues #1–#3</div>
+          <div class="refs">
+            Commit
+            <a href="https://github.com/agenticadventures/dangerous/commit/a9b260c"><code>a9b260c</code></a>
+          </div>
         </article>
 
         <article class="entry">
@@ -290,15 +304,21 @@
             <time>Jun 16, 2026 · 3:54 PM ET</time>
             <span class="pill cat">Feature</span>
             <span class="pill ui">👁 Visible in UI</span>
+            <span class="pill model">Claude Opus 4.8</span>
           </div>
           <h3>World Builder — map painting &amp; climate biomes (Stages 1–3)</h3>
           <p>
-            Built the World Builder from scratch: a grid you paint with land, water, and
-            mountains, plus an Earth-like climate model that turns latitude, prevailing winds,
-            rain shadow, and coastal moisture into biomes. Added the navigation tabs,
-            latitude/wind/moisture overlays, and hover tooltips.
+            Built the World Builder per the
+            <a href="https://github.com/agenticadventures/dangerous/blob/main/_plans/worldbuilding_plan.md">world-building plan</a>:
+            a grid you paint with land, water, and mountains, plus an Earth-like climate model
+            that turns latitude, prevailing winds, rain shadow, and coastal moisture into biomes
+            (Stages 1–3). Added the navigation tabs, latitude/wind/moisture overlays, and hover
+            tooltips.
           </p>
-          <div class="refs">Commit <code>8a4346c</code></div>
+          <div class="refs">
+            Commit
+            <a href="https://github.com/agenticadventures/dangerous/commit/8a4346c"><code>8a4346c</code></a>
+          </div>
         </article>
       </div>
     </section>
