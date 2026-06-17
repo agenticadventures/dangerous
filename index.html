@@ -189,6 +189,11 @@
       }
       .intro p { margin: 0; color: var(--muted); }
       .intro strong { color: var(--ink); }
+      .totals {
+        font-size: 0.82rem; color: var(--muted);
+        margin: -1rem 0 1.4rem; padding-left: 0.1rem;
+      }
+      .totals strong { color: #0f766e; font-variant-numeric: tabular-nums; }
 
       .journal {
         display: flex;
@@ -242,6 +247,7 @@
       .pill.code  { background: #f1eef6; color: #6b4ea0; border-color: #e2dcef; }
       .pill.model { background: #eef1f4; color: #44515e; border-color: #dde3e9; }
       .pill.issue { background: #fff4e6; color: #b35309; border-color: #f3dcc0; }
+      .pill.cost  { background: #e6f4f1; color: #0f766e; border-color: #c7e8e1; }
       a.pill { text-decoration: none; cursor: pointer; transition: filter 0.12s; }
       a.pill:hover { filter: brightness(0.96); }
       .entry h3 { margin: 0.1rem 0 0.3rem; font-size: 1rem; letter-spacing: -0.01em; }
@@ -270,6 +276,8 @@
         </p>
       </div>
 
+      <p class="totals">Total Claude API spend on this project to date: <strong>≈ $4.22</strong></p>
+
       <div class="journal">
         <!-- Newest entries on top. Claude appends a new entry whenever a sensible chunk of
              work lands: a feature, a completed plan stage, a batch of issues, etc. -->
@@ -280,6 +288,7 @@
             <span class="pill cat">Feature · Planning</span>
             <span class="pill ui">👁 Visible in UI</span>
             <span class="pill model">Claude Opus 4.8</span>
+            <span class="pill cost" title="Approximate Claude API spend for this work">≈ $3.33</span>
             <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/1">#1</a>
             <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/2">#2</a>
             <a class="pill issue" href="https://github.com/agenticadventures/dangerous/issues/3">#3</a>
@@ -305,6 +314,7 @@
             <span class="pill cat">Feature</span>
             <span class="pill ui">👁 Visible in UI</span>
             <span class="pill model">Claude Opus 4.8</span>
+            <span class="pill cost" title="Approximate Claude API spend for this work">≈ $0.89</span>
           </div>
           <h3>World Builder — map painting &amp; climate biomes (Stages 1–3)</h3>
           <p>
